@@ -1,21 +1,35 @@
+# Setup
 $originalFileName = "example.properties"
-$dateTimeStamp = $([datetime]::now.ToString('yyyy-MM-dd-HHmm'))
-$backupFileName = "example.properties.backup.$dateTimeStamp"
-$stageFileName = "staged-$originalFileName-$dateTimeStamp"
 
-# Make a backup
+$keyValuePairs = @{
+    "db.host" = "pegasus.fantasy.io"
+    "db.user" = "janedoe"
+    "db.port" = "8888"
+    "person.name.first" = "John"
+    "person.name.last" = "Doe"
+    "person.company" = "Cyberdyne Systems"
+    "person.address" = "400 S Flower St"
+    "person.city" = "Los Angeles"
+    "person.state" = "California"
+    "person.postalCode" = "90071"
+}
+
+# Create a backup file with filename format "backup.yyyy-MM-dd-HH-mm.originalFileName"
+$dateTimeStamp = $([datetime]::now.ToString('yyyy-MM-dd-HHmm'))
+$backupFileName = "backup.$dateTimeStamp.$originalFileName"
 Copy-Item $originalFileName $backupFileName
 
-# Now operate on the backup file.
+# Get the content of the backup file.
 $fileContent = Get-Content $backupFileName
-$fileContent = $fileContent -replace '^db\.port\s*=\s*[^\n\r]+', 'db.port = 9696'
-$fileContent = $fileContent -replace '^person\.name\.first\s*=\s*[^\n\r]+', 'person.name.first = John'
-$fileContent = $fileContent -replace '^person\.name\.last\s*=\s*[^\n\r]+', 'person.name.last = Doe'
-$fileContent = $fileContent -replace '^person\.company\s*=\s*[^\n\r]+', 'person.company = Cyberdyne Systems'
-$fileContent = $fileContent -replace '^person\.address\s*=\s*[^\n\r]+', 'person.address = 400 S Flower St'
-$fileContent = $fileContent -replace '^person\.city\s*=\s*[^\n\r]+', 'person.city = Los Angeles'
-$fileContent = $fileContent -replace '^person\.state\s*=\s*[^\n\r]+', 'person.state = California'
-$fileContent = $fileContent -replace '^person\.postalCode\s*=\s*[^\n\r]+', 'person.postalCode = 00000'
 
-# Create a stage file for deployment
+# Find and replace the relevant key/value pairs in the file content
+foreach ($keyValue in $keyValuePairs.GetEnumerator()) {
+    # Write-Host "$($keyValue.Name): $($keyValue.Value)"
+    $regex = "^" + $($keyValue.Name) + "\s*=\s*[^\n\r]+"
+    $fileContent = $fileContent -replace $regex, "$($keyValue.Name) = $($keyValue.Value)"
+}
+
+# Create a stage file with filename format "staged.yyyy-MM-dd-HH-mm.originalFileName"
+$stageFileName = "staged.$dateTimeStamp.$originalFileName"
 Set-Content -Path $stageFileName -Value $fileContent
+# Write-Host $fileContent
